@@ -30,14 +30,15 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPO: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws ssm send-command \
             --instance-ids "${{ secrets.INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
-            --parameters commands="aws ecr get-login-password \
-              --region ${{ secrets.AWS_REGION }} | docker login \
-              --username AWS --password-stdin $REGISTRY",\
-              "sudo docker pull $REGISTRY/$REPO:$IMAGE_TAG",\
-              "sudo docker stop app || true",\
-              "sudo docker rm app || true",\
-              "sudo docker run -d --name app -p 8080:8080 $REGISTRY/$REPO:$IMAGE_TAG"
+            --parameters "commands=[
+              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY\",
+              \"sudo docker pull $REGISTRY/$REPO:$IMAGE_TAG\",
+              \"sudo docker stop app || true\",
+              \"sudo docker rm app || true\",
+              \"sudo docker run -d --name app -p 8080:8080 $REGISTRY/$REPO:$IMAGE_TAG\"
+            ]"
